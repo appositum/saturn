@@ -24,9 +24,10 @@ last = None
 
 bot = Bot(command_prefix='+')
 
-tex_dict = {
-  'ta': r'=tex \rotatebox{180}{$\forall\bot$}'
-}
+tex_dict = {}
+
+with open("tex.json", "r") as f:
+  tex_dict = json.load(f)
 
 @bot.event
 async def on_ready():
