@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-import discord
+import os
 import re
 import json
 import asyncio
-import os
+
+from discord.ext.commands import Bot
 
 if not 'TOKEN' in os.environ:
   print('Token not found, exiting...')
@@ -21,25 +22,30 @@ log = os.environ.get('LOG')
 invite_pattern = re.compile(r'(?:discord\.gg/|discordapp\.com/invite/)([^\s|^\W+$]+)')
 last = None
 
-client = discord.Client()
+bot = Bot(command_prefix='+')
 
-@client.event
+tex_dict = {
+  'ta': r'=tex \rotatebox{180}{$\forall\bot$}'
+}
+
+@bot.event
 async def on_ready():
-  print(f'\n\nLogged in as {client.user.name} [{client.user.id}]\n\n')
+  print(f'\n\nLogged in as {bot.user.name} [{bot.user.id}]\n\n')
 
-@client.event
+@bot.event
 async def on_message(e):
   global last
-  if e.author.id == client.user.id:
-    return
+  if e.author.id == bot.user.id: return
 
-  if client.user.id in [x.id for x in e.mentions]:
-    await client.send_file(e.channel, '../media/sanic.png')
+  if bot.user.id in [x.id for x in e.mentions]:
+    await bot.send_file(e.channel, '../media/sanic.png')
 
   if e.type == 7:
     last = e
 
-@client.event
+  await bot.process_commands(e)
+
+@bot.event
 async def on_member_join(member):
   global last
   if invite_pattern.match(member.name) is not None:
@@ -47,8 +53,8 @@ async def on_member_join(member):
     while last == None:
       await asyncio.sleep(0.5)
 
-    await client.delete_message(last)
-    await client.ban(member)
+    await bot.delete_message(last)
+    await bot.ban(member)
 
     em = discord.Embed(
       color = 0x36393F,
@@ -63,8 +69,18 @@ async def on_member_join(member):
       value = ''.join(invite_pattern.findall(member.name))
     )
 
-    await client.send_message(client.get_channel(log), embed=em)
+    await bot.send_message(bot.get_channel(log), embed=em)
 
     last = None
 
-client.run(token)
+@bot.command(pass_context=True)
+async def tex(ctx, key):
+  content = tex_dict.get(key)
+  if content == None:
+    return await bot.say("fodase puta")
+
+  await bot.delete_message(ctx.message)
+  msg = await bot.say(content)
+  return await bot.delete_message(msg)
+
+bot.run(token)
